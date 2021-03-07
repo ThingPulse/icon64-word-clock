@@ -6,5 +6,10 @@
 
 [![ThingPulse Icon64](/resources/WordClock.jpg)](https://youtu.be/4bVVeHwS4fc?t=20) (Click to watch the video)
 
+## Resources
+* [STL File](/resources/stencil.stl) File for 3D printing the stencil
+* [DXF File](/resources/stencil.stl) Raw file for laser cutting or 3D modelling
+
+
 
 https://twitter.com/squix78/status/1327985814555545601
