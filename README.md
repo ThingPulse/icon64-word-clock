@@ -8,8 +8,7 @@
 
 ## Resources
 * [STL File](/resources/stencil.stl) File for 3D printing the stencil
-* [DXF File](/resources/stencil.stl) Raw file for laser cutting or 3D modelling
-
+* [DXF File](/resources/stencil.dxf) Raw file for laser cutting or 3D modelling
 
 
 https://twitter.com/squix78/status/1327985814555545601
