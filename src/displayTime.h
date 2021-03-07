@@ -1,50 +1,67 @@
+
+
+
 #include <Arduino.h>
 #include <time.h>
+#include <SmartLeds.h>
 
-#define MFIVE    mask |= 0xF00000000000;log_d("MFIVE");        // these are in hexadecimal
-#define MTEN     mask |= 0x5800000000000000;log_d("MTEN"); 
-#define AQUARTER mask |= 0x80FE000000000000;log_d("AQUARTER"); 
-#define TWENTY   mask |= 0x7E00000000000000;log_d("TWENTY"); 
-#define HALF     mask |= 0xF0000000000;log_d("HALF"); 
-#define PAST     mask |= 0x7800000000;log_d("PAST"); 
-#define TO       mask |= 0xC00000000;log_d("TO"); 
-#define ONE      mask |= 0x43;log_d("ONE"); 
-#define TWO      mask |= 0xC040;log_d("TWO"); 
-#define THREE    mask |= 0x1F0000;log_d("THREE"); 
-#define FOUR     mask |= 0xF0;log_d("FOUR"); 
-#define FIVE     mask |= 0xF0000000;log_d("FIVE"); 
-#define SIX      mask |= 0xE00000;log_d("SIX"); 
-#define SEVEN    mask |= 0x800F00;log_d("SEVEN"); 
-#define EIGHT    mask |= 0x1F000000;log_d("EIGHT"); 
-#define NINE     mask |= 0xF;log_d("NINE"); 
-#define TEN      mask |= 0x1010100;log_d("TEN"); 
-#define ELEVEN   mask |= 0x3F00;log_d("ELEVEN"); 
-#define TWELVE   mask |= 0xF600;log_d("TWELVE"); 
-#define ANDYDORO mask |= 0x8901008700000000;log_d("ANDYDORO"); 
+#define MFIVE    displayWord(leds, 0xF00000000000, Rgb(0x2C, 0x00, 0xFF))        // these are in hexadecimal
+#define MTEN     displayWord(leds, 0x5800000000000000, Rgb(0x2C, 0x00, 0xFF));
+#define AQUARTER displayWord(leds, 0x80FE000000000000, Rgb(0x2C, 0x00, 0xFF));
+#define TWENTY   displayWord(leds, 0x7E00000000000000, Rgb(0x2C, 0x00, 0xFF));
+#define HALF     displayWord(leds, 0xF0000000000, Rgb(0x2C, 0x00, 0xFF));
+#define PAST     displayWord(leds, 0x7800000000, Rgb(0xFF, 0x00, 0x00));
+#define TO       displayWord(leds, 0xC00000000, Rgb(0xFF, 0x00, 0x00));
+#define ONE      displayWord(leds, 0x43, Rgb(0x00, 0xFF, 0xEE));
+#define TWO      displayWord(leds, 0xC040, Rgb(0x00, 0xFF, 0xEE));
+#define THREE    displayWord(leds, 0x1F0000 , Rgb(0x00, 0xFF, 0xEE));
+#define FOUR     displayWord(leds, 0xF0, Rgb(0x00, 0xFF, 0xEE));
+#define FIVE     displayWord(leds, 0xF0000000, Rgb(0x00, 0xFF, 0xEE));
+#define SIX      displayWord(leds, 0xE00000, Rgb(0x00, 0xFF, 0xEE));
+#define SEVEN    displayWord(leds, 0x800F00, Rgb(0x00, 0xFF, 0xEE));
+#define EIGHT    displayWord(leds, 0x1F000000, Rgb(0x00, 0xFF, 0xEE));
+#define NINE     displayWord(leds, 0xF, Rgb(0x00, 0xFF, 0xEE));
+#define TEN      displayWord(leds, 0x1010100, Rgb(0x00, 0xFF, 0xEE));
+#define ELEVEN   displayWord(leds, 0x3F00, Rgb(0x00, 0xFF, 0xEE));
+#define TWELVE   displayWord(leds, 0xF600, Rgb(0x00, 0xFF, 0xEE));
+
+
+uint8_t getLedIndex(uint8_t x, uint8_t y) {
+  //x = 7 - x;
+  if (y % 2 == 0) {
+    return y * 8 + x;
+  } else {
+    return y * 8 + (7 - x);
+  }
+}
+
+void displayWord(SmartLed *leds, uint64_t mask, Rgb color) {
+  uint8_t bitIndex = 0;
+  for (int x = 0; x < 8; x++) {
+    for (int y = 0; y < 8; y++) {
+
+      boolean lastBit = bitRead(mask, bitIndex);
+      Hsv hsv = Hsv(color);
+      if (lastBit) {
+        hsv.h = hsv.h + millis() / 200 + bitIndex;
+        hsv.v = hsv.v * 0.15;
+        leds->operator [] ( getLedIndex(7 - x, y)  ) = hsv;
+      }
+
+      bitIndex++;
+    }
+  }
+}
+
 // function to generate the right "phrase" based on the time
 
-uint64_t getWordMask(struct tm * theTime) {
+uint64_t getWordMask(SmartLed *leds, struct tm * theTime) {
 
-  // get time from the RTC
-  //DateTime theTime = RTC.now();
-  //theTime = calculateTime(); // takes into account DST
-
-  // serial print current time
-  /*
-  Serial.print(theTime.year(), DEC);
-  Serial.print('/');
-  Serial.print(theTime.month(), DEC);
-  Serial.print('/');
-  Serial.print(theTime.day(), DEC);
-  Serial.print(' ');
-  Serial.print(theTime->tm_hour, DEC);
-  Serial.print(':');
-  Serial.print(theTime->tm_min, DEC);
-  Serial.print(':');
-  Serial.print(theTime.second(), DEC);
-  Serial.println();
-  */
   uint64_t mask = 0;
+
+  for (int i = 0; i < 64; i++) {
+      leds->operator [] (i) = Rgb(0, 0, 0);
+  }
 
   // time we display the appropriate theTime->tm_min counter
   if ((theTime->tm_min > 4) && (theTime->tm_min < 10)) {

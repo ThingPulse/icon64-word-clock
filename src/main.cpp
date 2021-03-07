@@ -1,5 +1,6 @@
 /*
-   Based on design and code by Andy Doro
+   Based on design and code by Andy Doro:
+   https://github.com/andydoro/WordClock-NeoMatrix8x8
 
 */
 
@@ -22,7 +23,7 @@ const int   daylightOffset_sec = 3600;
 // How many NeoPixels are attached to the Arduino?
 #define LED_COUNT  64
 const int CHANNEL = 0;
-double brightness = 0.25;
+double brightness = 0.50;
 
 SmartLed leds( LED_WS2812B, LED_COUNT, LED_PIN, CHANNEL, DoubleBuffer );
 
@@ -35,37 +36,17 @@ Rgb bootColors[8] = {Rgb(0x2C, 0x00, 0xFF),
                      Rgb(0x00, 0xFF, 0xEE),
                      Rgb(0xFF, 0x00, 0x00)};
 
-uint8_t getLedIndex(uint8_t x, uint8_t y) {
-  //x = 7 - x;
-  if (y % 2 == 0) {
-    return y * 8 + x;
-  } else {
-    return y * 8 + (7 - x);
-  }
-}
+struct tm timeInfo;
+int counter = 0;
 
 void printLocalTime() {
-  struct tm timeInfo;
-  if(!getLocalTime(&timeInfo)){
-    Serial.println("Failed to obtain time");
-    return;
-  }
+
+  timeInfo.tm_hour = counter / 60;
+  timeInfo.tm_min = counter % 60;
+
+  counter++;
   Serial.println(&timeInfo, "%A, %B %d %Y %H:%M:%S");
-  uint64_t mask = getWordMask(&timeInfo);
-  uint8_t bitIndex = 0;
-  for (int x = 0; x < 8; x++) {
-    for (int y = 0; y < 8; y++) {
-
-      boolean lastBit = bitRead(mask, bitIndex);
-      Hsv hsv = Hsv(Rgb(0x2C, 0x00, 0xFF));
-      if (lastBit) {
-        hsv.v = hsv.v * brightness;
-        leds[ getLedIndex(7 - x, y) ] = hsv;
-      }
-
-      bitIndex++;
-    }
-  }
+  getWordMask(&leds, &timeInfo);
   leds.show();
   leds.wait();
 }
@@ -116,10 +97,12 @@ void setup()
   //disconnect WiFi as it's no longer needed
   WiFi.disconnect(true);
   WiFi.mode(WIFI_OFF);
+
+
 }
 
 void loop()
 {
-  delay(1000);
+  delay(200);
   printLocalTime();
 }
