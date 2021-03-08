@@ -1,5 +1,4 @@
-
-
+// based on / inspired by https://github.com/andydoro/WordClock-NeoMatrix8x8/blob/master/WordClock_NeoMatrix8x8/displayTime.ino
 
 #include <Arduino.h>
 #include <time.h>
@@ -279,13 +278,4 @@ uint64_t getWordMask(SmartLed *leds, struct tm * theTime) {
   }
   return mask;
   //applyMask(); // apply phrase mask to colorshift function
-
 }
-
-
-
-
-
-
-
-
