@@ -8,13 +8,18 @@
 #include "time.h"
 #include <SmartLeds.h>
 #include "displayTime.h"
+#include "TZ.h"
 
-const char* ssid       = "yourssid";
-const char* password   = "yourpassw0rd";
 
+// ********* user settings *********
+const char* ssid      = "yourssid";
+const char* password  = "yourpassw0rd";
 const char *ntpServer = "pool.ntp.org";
-const long gmtOffset_sec = 3600;
-const int daylightOffset_sec = 3600;
+// "TZ_" macros follow DST change across seasons without source code change
+// check for your nearest city in src/TZ.h
+#define MYTZ TZ_Europe_Zurich
+// ********* END user settings *********
+
 
 #define LED_PIN 32
 #define LED_COUNT 64
@@ -38,7 +43,7 @@ struct tm timeInfo;
 // ********* forward declarations *********
 void drawBootSequence(uint8_t i);
 void initTime();
-void printLocalTime();
+void displayLocalTime();
 // ********* END forward declarations *********
 
 
@@ -62,12 +67,12 @@ void setup() {
   Serial.println("Connected");
 
   initTime();
-  printLocalTime();
+  displayLocalTime();
 }
 
 void loop() {
   delay(1000);
-  printLocalTime();
+  displayLocalTime();
 }
 
 
@@ -88,7 +93,7 @@ void drawBootSequence(uint8_t i) {
 }
 
 void initTime() {
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  configTzTime(MYTZ, ntpServer);
 
   // wait for NTP to properly sync
   int i = 0;
@@ -101,7 +106,7 @@ void initTime() {
   Serial.println();
 }
 
-void printLocalTime() {
+void displayLocalTime() {
   if(!getLocalTime(&timeInfo)){
     Serial.println("Failed to obtain time");
     return;
