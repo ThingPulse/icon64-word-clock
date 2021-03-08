@@ -41,11 +41,11 @@ int counter = 0;
 
 void printLocalTime() {
 
-  timeInfo.tm_hour = counter / 60;
-  timeInfo.tm_min = counter % 60;
-
-  counter++;
   Serial.println(&timeInfo, "%A, %B %d %Y %H:%M:%S");
+  if(!getLocalTime(&timeInfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
   getWordMask(&leds, &timeInfo);
   leds.show();
   leds.wait();
@@ -95,14 +95,14 @@ void setup()
   printLocalTime();
 
   //disconnect WiFi as it's no longer needed
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
+  //WiFi.disconnect(true);
+  //WiFi.mode(WIFI_OFF);
 
 
 }
 
 void loop()
 {
-  delay(200);
+  delay(1000);
   printLocalTime();
 }
