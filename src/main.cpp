@@ -87,6 +87,15 @@ void setup() {
 
   // init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  // wait for NTP to properly sync
+  int i = 0;
+  while (time(nullptr) < 1615192357 && i < 40) {
+    Serial.print(".");
+    delay(500);
+    i++;
+    yield();
+  }
+  Serial.println();
   printLocalTime();
 
   // disconnect WiFi as it's no longer needed
