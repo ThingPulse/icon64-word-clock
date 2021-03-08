@@ -3,7 +3,6 @@
    https://github.com/andydoro/WordClock-NeoMatrix8x8
 */
 
-
 #include <Arduino.h>
 #include <WiFi.h>
 #include "time.h"
@@ -18,8 +17,6 @@ const long gmtOffset_sec = 3600;
 const int daylightOffset_sec = 3600;
 
 #define LED_PIN 32
-
-// How many NeoPixels are attached to the Arduino?
 #define LED_COUNT 64
 const int CHANNEL = 0;
 double brightness = 0.50;
@@ -36,35 +33,14 @@ Rgb bootColors[8] = {Rgb(0x2C, 0x00, 0xFF),
                      Rgb(0xFF, 0x00, 0x00)};
 
 struct tm timeInfo;
-int counter = 0;
 
-void printLocalTime() {
 
-  Serial.println(&timeInfo, "%A, %B %d %Y %H:%M:%S");
-  if(!getLocalTime(&timeInfo)){
-    Serial.println("Failed to obtain time");
-    return;
-  }
-  getWordMask(&leds, &timeInfo);
-  leds.show();
-  leds.wait();
-}
+// ********* forward declarations *********
+void drawBootSequence(uint8_t i);
+void initTime();
+void printLocalTime();
+// ********* END forward declarations *********
 
-void drawBootSequence(uint8_t i) {
-  if (i > 8) {
-    i = 8;
-  }
-  for (int y = 0; y <= i; y++) {
-    for (int x = 0; x < 8 - y; x++) {
-      Hsv hsv = Hsv(bootColors[y]);
-      hsv.v = hsv.v * brightness;
-      leds[getLedIndex(7 - x, y)] = hsv;
-    }
-  }
-  leds.show();
-  leds.wait();
-  delay(250);
-}
 
 void setup() {
   Serial.begin(115200);
@@ -85,8 +61,35 @@ void setup() {
   }
   Serial.println("Connected");
 
-  // init and get the time
+  initTime();
+  printLocalTime();
+}
+
+void loop() {
+  delay(1000);
+  printLocalTime();
+}
+
+
+void drawBootSequence(uint8_t i) {
+  if (i > 8) {
+    i = 8;
+  }
+  for (int y = 0; y <= i; y++) {
+    for (int x = 0; x < 8 - y; x++) {
+      Hsv hsv = Hsv(bootColors[y]);
+      hsv.v = hsv.v * brightness;
+      leds[getLedIndex(7 - x, y)] = hsv;
+    }
+  }
+  leds.show();
+  leds.wait();
+  delay(250);
+}
+
+void initTime() {
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
   // wait for NTP to properly sync
   int i = 0;
   while (time(nullptr) < 1615192357 && i < 40) {
@@ -96,14 +99,15 @@ void setup() {
     yield();
   }
   Serial.println();
-  printLocalTime();
-
-  // disconnect WiFi as it's no longer needed
-  // WiFi.disconnect(true);
-  // WiFi.mode(WIFI_OFF);
 }
 
-void loop() {
-  delay(1000);
-  printLocalTime();
+void printLocalTime() {
+  if(!getLocalTime(&timeInfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeInfo, "%A, %B %d %Y %H:%M:%S");
+  getWordMask(&leds, &timeInfo);
+  leds.show();
+  leds.wait();
 }
