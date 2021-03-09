@@ -2,27 +2,27 @@
 
 #include <Arduino.h>
 #include <time.h>
-#include <SmartLeds.h>
+#include <FastLED.h>
 
-#define MFIVE    displayWord(leds, 0xF00000000000, Rgb(0x2C, 0x00, 0xFF))        // these are in hexadecimal
-#define MTEN     displayWord(leds, 0x5800000000000000, Rgb(0x2C, 0x00, 0xFF));
-#define AQUARTER displayWord(leds, 0x80FE000000000000, Rgb(0x2C, 0x00, 0xFF));
-#define TWENTY   displayWord(leds, 0x7E00000000000000, Rgb(0x2C, 0x00, 0xFF));
-#define HALF     displayWord(leds, 0xF0000000000, Rgb(0x2C, 0x00, 0xFF));
-#define PAST     displayWord(leds, 0x7800000000, Rgb(0xFF, 0x00, 0x00));
-#define TO       displayWord(leds, 0xC00000000, Rgb(0xFF, 0x00, 0x00));
-#define ONE      displayWord(leds, 0x43, Rgb(0x00, 0xFF, 0xEE));
-#define TWO      displayWord(leds, 0xC040, Rgb(0x00, 0xFF, 0xEE));
-#define THREE    displayWord(leds, 0x1F0000 , Rgb(0x00, 0xFF, 0xEE));
-#define FOUR     displayWord(leds, 0xF0, Rgb(0x00, 0xFF, 0xEE));
-#define FIVE     displayWord(leds, 0xF0000000, Rgb(0x00, 0xFF, 0xEE));
-#define SIX      displayWord(leds, 0xE00000, Rgb(0x00, 0xFF, 0xEE));
-#define SEVEN    displayWord(leds, 0x800F00, Rgb(0x00, 0xFF, 0xEE));
-#define EIGHT    displayWord(leds, 0x1F000000, Rgb(0x00, 0xFF, 0xEE));
-#define NINE     displayWord(leds, 0xF, Rgb(0x00, 0xFF, 0xEE));
-#define TEN      displayWord(leds, 0x1010100, Rgb(0x00, 0xFF, 0xEE));
-#define ELEVEN   displayWord(leds, 0x3F00, Rgb(0x00, 0xFF, 0xEE));
-#define TWELVE   displayWord(leds, 0xF600, Rgb(0x00, 0xFF, 0xEE));
+#define MFIVE    displayWord(leds, 0xF00000000000, CRGB(0x2C, 0x00, 0xFF))        // these are in hexadecimal
+#define MTEN     displayWord(leds, 0x5800000000000000, CRGB(0x2C, 0x00, 0xFF));
+#define AQUARTER displayWord(leds, 0x80FE000000000000, CRGB(0x2C, 0x00, 0xFF));
+#define TWENTY   displayWord(leds, 0x7E00000000000000, CRGB(0x2C, 0x00, 0xFF));
+#define HALF     displayWord(leds, 0xF0000000000, CRGB(0x2C, 0x00, 0xFF));
+#define PAST     displayWord(leds, 0x7800000000, CRGB(0xFF, 0x00, 0x00));
+#define TO       displayWord(leds, 0xC00000000, CRGB(0xFF, 0x00, 0x00));
+#define ONE      displayWord(leds, 0x43, CRGB(0x00, 0xFF, 0xEE));
+#define TWO      displayWord(leds, 0xC040, CRGB(0x00, 0xFF, 0xEE));
+#define THREE    displayWord(leds, 0x1F0000 , CRGB(0x00, 0xFF, 0xEE));
+#define FOUR     displayWord(leds, 0xF0, CRGB(0x00, 0xFF, 0xEE));
+#define FIVE     displayWord(leds, 0xF0000000, CRGB(0x00, 0xFF, 0xEE));
+#define SIX      displayWord(leds, 0xE00000, CRGB(0x00, 0xFF, 0xEE));
+#define SEVEN    displayWord(leds, 0x800F00, CRGB(0x00, 0xFF, 0xEE));
+#define EIGHT    displayWord(leds, 0x1F000000, CRGB(0x00, 0xFF, 0xEE));
+#define NINE     displayWord(leds, 0xF, CRGB(0x00, 0xFF, 0xEE));
+#define TEN      displayWord(leds, 0x1010100, CRGB(0x00, 0xFF, 0xEE));
+#define ELEVEN   displayWord(leds, 0x3F00, CRGB(0x00, 0xFF, 0xEE));
+#define TWELVE   displayWord(leds, 0xF600, CRGB(0x00, 0xFF, 0xEE));
 
 
 uint8_t getLedIndex(uint8_t x, uint8_t y) {
@@ -34,17 +34,16 @@ uint8_t getLedIndex(uint8_t x, uint8_t y) {
   }
 }
 
-void displayWord(SmartLed *leds, uint64_t mask, Rgb color) {
+void displayWord(CRGB *leds, uint64_t mask, CRGB color) {
   uint8_t bitIndex = 0;
   for (int x = 0; x < 8; x++) {
     for (int y = 0; y < 8; y++) {
 
       boolean lastBit = bitRead(mask, bitIndex);
-      Hsv hsv = Hsv(color);
+      CHSV hsv = rgb2hsv_approximate(color);
       if (lastBit) {
         hsv.h = hsv.h + millis() / 200 + bitIndex;
-        hsv.v = hsv.v * 0.15;
-        leds->operator [] ( getLedIndex(7 - x, y)  ) = hsv;
+        leds[getLedIndex(7 - x, y)] = hsv;
       }
 
       bitIndex++;
@@ -54,12 +53,12 @@ void displayWord(SmartLed *leds, uint64_t mask, Rgb color) {
 
 // function to generate the right "phrase" based on the time
 
-uint64_t getWordMask(SmartLed *leds, struct tm * theTime) {
+uint64_t getWordMask(CRGB *leds, struct tm * theTime) {
 
   uint64_t mask = 0;
 
   for (int i = 0; i < 64; i++) {
-      leds->operator [] (i) = Rgb(0, 0, 0);
+      leds->operator [] (i) = CRGB::Black;
   }
 
   // time we display the appropriate theTime->tm_min counter

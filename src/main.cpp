@@ -6,7 +6,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include "time.h"
-#include <SmartLeds.h>
+#include <FastLED.h>
 #include "displayTime.h"
 #include "TZ.h"
 
@@ -24,18 +24,18 @@ const char *ntpServer = "pool.ntp.org";
 #define LED_PIN 32
 #define LED_COUNT 64
 const int CHANNEL = 0;
-double brightness = 0.50;
+double brightness = 0.40;
 
-SmartLed leds(LED_WS2812B, LED_COUNT, LED_PIN, CHANNEL, DoubleBuffer);
+CRGB bootColors[8] = {CRGB(0x2C, 0x00, 0xFF),
+                     CRGB(0xFF, 0x00, 0xE8),
+                     CRGB(0xFF, 0x00, 0x00),
+                     CRGB(0xFF, 0x8A, 0x00),
+                     CRGB(0xFF, 0xF0, 0x00),
+                     CRGB(0x04, 0xFF, 0x00),
+                     CRGB(0x00, 0xFF, 0xEE),
+                     CRGB(0xFF, 0x00, 0x00)};
 
-Rgb bootColors[8] = {Rgb(0x2C, 0x00, 0xFF),
-                     Rgb(0xFF, 0x00, 0xE8),
-                     Rgb(0xFF, 0x00, 0x00),
-                     Rgb(0xFF, 0x8A, 0x00),
-                     Rgb(0xFF, 0xF0, 0x00),
-                     Rgb(0x04, 0xFF, 0x00),
-                     Rgb(0x00, 0xFF, 0xEE),
-                     Rgb(0xFF, 0x00, 0x00)};
+CRGB leds[LED_COUNT];
 
 struct tm timeInfo;
 
@@ -50,6 +50,8 @@ void displayLocalTime();
 void setup() {
   Serial.begin(115200);
 
+  FastLED.addLeds<WS2812B, LED_PIN>(leds, LED_COUNT);
+  FastLED.setBrightness(brightness * 255.0);
   // connect to WiFi
   Serial.printf("Connecting to %s ", ssid);
   WiFi.begin(ssid, password);
@@ -61,6 +63,7 @@ void setup() {
     counter++;
     Serial.println("...Connecting to WiFi");
   }
+  FastLED.clear();
   for (uint8_t i = counter; i < 8; i++) {
     drawBootSequence(i);
   }
@@ -71,7 +74,7 @@ void setup() {
 }
 
 void loop() {
-  delay(1000);
+  delay(50);
   displayLocalTime();
 }
 
@@ -80,16 +83,16 @@ void drawBootSequence(uint8_t i) {
   if (i > 8) {
     i = 8;
   }
+  FastLED.clear();
   for (int y = 0; y <= i; y++) {
     for (int x = 0; x < 8 - y; x++) {
-      Hsv hsv = Hsv(bootColors[y]);
-      hsv.v = hsv.v * brightness;
+      CHSV hsv = rgb2hsv_approximate(bootColors[y]);
       leds[getLedIndex(7 - x, y)] = hsv;
     }
+
   }
-  leds.show();
-  leds.wait();
-  delay(250);
+  FastLED.show();
+  delay(500);
 }
 
 void initTime() {
@@ -107,12 +110,12 @@ void initTime() {
 }
 
 void displayLocalTime() {
+  FastLED.clear();
   if(!getLocalTime(&timeInfo)){
     Serial.println("Failed to obtain time");
     return;
   }
   Serial.println(&timeInfo, "%A, %B %d %Y %H:%M:%S");
-  getWordMask(&leds, &timeInfo);
-  leds.show();
-  leds.wait();
+  getWordMask(leds, &timeInfo);
+  FastLED.show();
 }
