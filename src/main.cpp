@@ -1,27 +1,53 @@
 /*
+MIT License
+
+Copyright (c) 2020 ThingPulse GmbH
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+/*
    Based on design and code by Andy Doro:
    https://github.com/andydoro/WordClock-NeoMatrix8x8
 */
 
 #include <Arduino.h>
+#include "SPIFFS.h"
 #include <WiFi.h>
 #include "time.h"
 #include <FastLED.h>
 #include "displayTime.h"
 #include "TZ.h"
+#include "TZinfo.h"
 
 
 // ********* user settings *********
-const char* ssid      = "yourssid";
-const char* password  = "yourpassw0rd";
-const char *ntpServer = "pool.ntp.org";
+String ssid = "yourssid";
+String password = "yourpassw0rd";
 // If true the colors change every second thereby mimicking the second counter
 // of a regular watch. If false the colors transition gradually and therefore
 // smoothly.
-const bool secondCounterEffect = true;
+bool secondCounterEffect = true;
 // "TZ_" macros follow DST change across seasons without source code change
 // check for your nearest city in src/TZ.h
-#define MYTZ TZ_Europe_Zurich
+String timezone = TZ_Europe_Zurich;
+const char *ntpServer = "pool.ntp.org";
 // ********* END user settings *********
 
 
@@ -46,14 +72,17 @@ struct tm timeInfo;
 
 
 // ********* forward declarations *********
+void displayLocalTime();
 void drawBootSequence(uint8_t i);
 void initTime();
-void displayLocalTime();
+void loadPropertiesFromSpiffs();
 // ********* END forward declarations *********
 
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
+  loadPropertiesFromSpiffs();
 
   if (secondCounterEffect) {
     loopDelay = 1000;
@@ -64,8 +93,8 @@ void setup() {
   FastLED.addLeds<WS2812B, LED_PIN>(leds, LED_COUNT);
   FastLED.setBrightness(brightness * 255.0);
   // connect to WiFi
-  Serial.printf("Connecting to %s ", ssid);
-  WiFi.begin(ssid, password);
+  Serial.printf("Connecting to %s ", ssid.c_str());
+  WiFi.begin(ssid.c_str(), password.c_str());
   drawBootSequence(1);
   // Try forever
   int counter = 2;
@@ -90,6 +119,17 @@ void loop() {
 }
 
 
+void displayLocalTime() {
+  FastLED.clear();
+  if(!getLocalTime(&timeInfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeInfo, "%A, %B %d %Y %H:%M:%S");
+  getWordMask(leds, &timeInfo);
+  FastLED.show();
+}
+
 void drawBootSequence(uint8_t i) {
   if (i > 8) {
     i = 8;
@@ -107,7 +147,7 @@ void drawBootSequence(uint8_t i) {
 }
 
 void initTime() {
-  configTzTime(MYTZ, ntpServer);
+  configTzTime(timezone.c_str(), ntpServer);
 
   // wait for NTP to properly sync
   int i = 0;
@@ -120,13 +160,37 @@ void initTime() {
   Serial.println();
 }
 
-void displayLocalTime() {
-  FastLED.clear();
-  if(!getLocalTime(&timeInfo)){
-    Serial.println("Failed to obtain time");
-    return;
+void loadPropertiesFromSpiffs() {
+  if (SPIFFS.begin()) {
+    Serial.println("Attempting to read application.properties file from SPIFFS.");
+    File f = SPIFFS.open("/application.properties");
+    if (f) {
+      Serial.println("File exists. Reading and assigning properties.");
+      while (f.available()) {
+        String key = f.readStringUntil('=');
+        String value = f.readStringUntil('\n');
+        if (key == "ssid") {
+          ssid = value.c_str();
+          Serial.println("Using 'ssid' from SPIFFS");
+        } else if (key == "password") {
+          password = value.c_str();
+          Serial.println("Using 'password' from SPIFFS");
+        } else if (key == "timezone") {
+          timezone = getTzInfo(value.c_str());
+          Serial.println("Using 'timezone' from SPIFFS");
+        } else if (key == "secondCounterEffect") {
+          secondCounterEffect = value == "true" ? true : false;
+          Serial.println("Using 'secondCounterEffect' from SPIFFS");
+        }
+      }
+    }
+    f.close();
+    Serial.println("Effective properties now as follows:");
+    Serial.println("\tssid: " + ssid);
+    Serial.println("\tpassword: " + password);
+    Serial.println("\timezone: " + timezone);
+    Serial.println("\tsecond counter effect: " + String(secondCounterEffect ? "true" : "false"));
+  } else {
+    Serial.println("SPIFFS mount failed.");
   }
-  Serial.println(&timeInfo, "%A, %B %d %Y %H:%M:%S");
-  getWordMask(leds, &timeInfo);
-  FastLED.show();
 }
