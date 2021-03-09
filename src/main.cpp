@@ -15,6 +15,10 @@
 const char* ssid      = "yourssid";
 const char* password  = "yourpassw0rd";
 const char *ntpServer = "pool.ntp.org";
+// If true the colors change every second thereby mimicking the second counter
+// of a regular watch. If false the colors transition gradually and therefore
+// smoothly.
+const bool secondCounterEffect = true;
 // "TZ_" macros follow DST change across seasons without source code change
 // check for your nearest city in src/TZ.h
 #define MYTZ TZ_Europe_Zurich
@@ -25,6 +29,7 @@ const char *ntpServer = "pool.ntp.org";
 #define LED_COUNT 64
 const int CHANNEL = 0;
 double brightness = 0.40;
+int loopDelay;
 
 CRGB bootColors[8] = {CRGB(0x2C, 0x00, 0xFF),
                      CRGB(0xFF, 0x00, 0xE8),
@@ -50,6 +55,12 @@ void displayLocalTime();
 void setup() {
   Serial.begin(115200);
 
+  if (secondCounterEffect) {
+    loopDelay = 1000;
+  } else {
+    loopDelay = 50;
+  }
+
   FastLED.addLeds<WS2812B, LED_PIN>(leds, LED_COUNT);
   FastLED.setBrightness(brightness * 255.0);
   // connect to WiFi
@@ -74,7 +85,7 @@ void setup() {
 }
 
 void loop() {
-  delay(50);
+  delay(loopDelay);
   displayLocalTime();
 }
 
