@@ -48,13 +48,13 @@ bool secondCounterEffect = true;
 // check for your nearest city in src/TZ.h
 String timezone = TZ_Europe_Zurich;
 const char *ntpServer = "pool.ntp.org";
+int brightness = 100;  // {0, 255}
 // ********* END user settings *********
 
 
 #define LED_PIN 32
 #define LED_COUNT 64
 const int CHANNEL = 0;
-double brightness = 0.40;
 int loopDelay;
 
 CRGB bootColors[8] = {CRGB(0x2C, 0x00, 0xFF),
@@ -91,7 +91,7 @@ void setup() {
   }
 
   FastLED.addLeds<WS2812B, LED_PIN>(leds, LED_COUNT);
-  FastLED.setBrightness(brightness * 255.0);
+  FastLED.setBrightness(brightness);
   // connect to WiFi
   Serial.printf("Connecting to %s ", ssid.c_str());
   WiFi.begin(ssid.c_str(), password.c_str());
@@ -181,6 +181,9 @@ void loadPropertiesFromSpiffs() {
         } else if (key == "secondCounterEffect") {
           secondCounterEffect = value == "true" ? true : false;
           Serial.println("Using 'secondCounterEffect' from SPIFFS");
+        } else if (key == "brightness") {
+          brightness = value.toInt();
+          log_i("Using 'brightness' from SPIFFS");
         }
       }
     }
@@ -190,6 +193,7 @@ void loadPropertiesFromSpiffs() {
     Serial.println("\tpassword: " + password);
     Serial.println("\timezone: " + timezone);
     Serial.println("\tsecond counter effect: " + String(secondCounterEffect ? "true" : "false"));
+    Serial.println("\tbrightness: " + String(brightness));
   } else {
     Serial.println("SPIFFS mount failed.");
   }
